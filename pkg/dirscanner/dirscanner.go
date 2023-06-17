@@ -15,6 +15,7 @@ import (
 
 type dirScanner struct {
 	queue                  queue.Queue[*Node]
+	mutex                  sync.Mutex
 	sem                    semaphore.Weighted
 	totalDirSize           uint64
 	maxGoroutinesCount     int64
@@ -34,6 +35,11 @@ func NewScanner(cnt int64) IScanner {
 }
 
 func (s *dirScanner) Scan(path string, ctx context.Context) *Node {
+	if !s.mutex.TryLock() {
+		panic("SCAN PROCESS IS ONGOING")
+	}
+	defer s.mutex.Unlock()
+
 	absPath, _ := filepath.Abs(path)
 	tree := s.buildTree(absPath, ctx)
 	s.traverseTreeDFS(tree)
