@@ -33,19 +33,16 @@ func NewScanner(cnt int64) IScanner {
 	}
 }
 
-func (s *dirScanner) Scan(path string) *Node {
+func (s *dirScanner) Scan(path string, ctx context.Context) *Node {
 	absPath, _ := filepath.Abs(path)
-	tree := s.buildTree(absPath)
+	tree := s.buildTree(absPath, ctx)
 	s.traverseTreeDFS(tree)
 	return tree
 }
 
-func (s *dirScanner) buildTree(rootPath string) *Node {
+func (s *dirScanner) buildTree(rootPath string, ctx context.Context) *Node {
 
-	var (
-		wg  = sync.WaitGroup{}
-		ctx = context.Background()
-	)
+	wg := sync.WaitGroup{}
 
 	root := &Node{
 		Name:     rootPath,
@@ -55,10 +52,15 @@ func (s *dirScanner) buildTree(rootPath string) *Node {
 
 	s.queue.Push(root)
 
+bfsLoop:
 	for s.queue.Size() > 0 || s.currentGoroutinesCount.Load() > 0 {
-		if s.queue.Size() == 0 {
-			time.Sleep(time.Microsecond)
-			continue
+		select {
+		case <-ctx.Done():
+			break bfsLoop
+		case <-time.After(time.Microsecond):
+			if s.queue.Size() == 0 {
+				continue bfsLoop
+			}
 		}
 
 		currentNode := s.queue.Pop()

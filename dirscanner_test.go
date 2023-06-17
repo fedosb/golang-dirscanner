@@ -1,6 +1,7 @@
 package golang_dirscanner
 
 import (
+	"context"
 	"fmt"
 	"golang-dirscanner/pkg/dirscanner"
 	"strings"
@@ -8,6 +9,10 @@ import (
 )
 
 func printTree(node *dirscanner.Node, indent, prefix, path string) {
+	if node == nil {
+		return
+	}
+
 	fmt.Println(indent+prefix, node.Type, strings.ReplaceAll(node.Name, path, ""),
 		fmt.Sprintf("(%d B; %.4f %%)", node.Size, node.Percentage),
 	)
@@ -18,8 +23,12 @@ func printTree(node *dirscanner.Node, indent, prefix, path string) {
 
 func TestDirScanner_Scan(t *testing.T) {
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	s := dirscanner.NewScanner(1)
-	tree := s.Scan("./")
+	tree := s.Scan("./", ctx)
 
 	printTree(tree, "", "", "")
+
 }

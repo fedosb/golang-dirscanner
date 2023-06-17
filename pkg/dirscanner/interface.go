@@ -1,5 +1,7 @@
 package dirscanner
 
+import "context"
+
 type IScanner interface {
-	Scan(path string) *Node
+	Scan(string, context.Context) *Node
 }
